@@ -1,0 +1,24 @@
+// there are 3 structs to take note of:
+
+// rb_heap_struct : Represents the structure of the whole heap. heap = memory region for dynamically allocating objects in a specific process
+// heap_page: Represents a heap page with memory slots for ruby objects
+// object_space: Represents information about the whole heap: heap pages, objects, e.t.c
+// size_pool {
+//   slot_size : size of RVALUE * 2
+//   allocatable_pages: ?
+//   eden_heap: ?
+//   tomb_heap: ?
+// }
+
+// gc_params {
+// heap_init_slots : 1000
+// heap_free_slots : 4096
+// heap_growth_factor: 1.8
+// heap_growth_max_slots: 0
+// malloc_limit_min: 16 megabytes
+// malloc_limit_max: 32 megabytes
+// malloc_limit_growth_factor: 1.4
+// gc_stress: false
+// }
+
+

@@ -1,0 +1,44 @@
+There are 2 categories of objects in Ruby:
+- Immediate objects: Objects that don't have any storage in the object space, i.e no backing C struct and can be used directly. 
+E.g numbers (fixnum), symbols, true, false, nil
+- Built-in types: Objects that have storage, i.e a backing struct. Every other object asides the ones mentioned above.
+
+Immediate type objects like true, false, nil are mapped to specific integer values. E.g true = 20, false = 0, nil = 8.
+There are 2 types of number objects:
+Fixnum and Bignum
+Fixnum are fix width numbers and that don't have any storage. They are any number within the max positive long value for the machine divided by 2 for positive values
+and max negative long for the machine divided by 2, i.e:
+## For positive numbers
+max positive long value on 64bits machines = ((2 ** 64)/2) - 1
+So positive Fixnums are within the range of 0 to  ((2 ** 64)/2 - 1)/2
+Same applies to negative numbers.
+Fixnum numbers are used directly (well not literally, more on this later), no object space (memory buffer) is allocated to them.
+Numbers above the max values are called Bignum, they have a C structure, so they are in the built-in category.
+
+Ruby Fixnum numbers are converted to an odd value before using it in C. They are converted with `number * 2 + 1`.
+Why does Ruby do this?
+Well first, a bit of summary of Ruby's object model.
+Everything is an object in Ruby, so to have a consistent interface and to make working with all objects simple, every object is of the same
+C type externally: VALUE. Type VALUE is essentially unsigned long (64 bits on 64 bit machines).
+Built-in types are represented and stored in memory with a struct. For built-in types, VALUE is a casted pointer address to the object's struct in memory.
+Pointer addresses are essentially unsigned 64 bit numbers.
+Since Fixnum numbers are used directly and are also 64bits, to differentiate between a Fixnum VALUE and a built-in type VALUE, Ruby Fixnum numbers are converted
+to odd numbers in the manner mentioned previously: number * 2 + 1. This is because all built-in types have a size of 40 bytes (sizeof RVALUE),
+so their pointers are guaranteed to be aligned in 8 byte segments (since modern systems require memory allocations to be at least 8 bytes and 40 is a multiple of 8),
+which means all buit-in type pointers are even numbers.
+So built-in object VALUEs are casted to their corresponding struct and Fixnum VALUEs are converted to odd numbers.
+To know the type of the object to decide whether to cast or use directly, the following checks are done:
+
+1. Check if it's a built-in type:
+!(object & 7 || !(object & 8))
+What does the above mean?
+(object & 7): If the object is buit-in, it means the VALUE is a multiple of 8. A Bitwise AND of any multiple of 8 and 7 results in 0.
+!(object & 8): This essentially checks that the object isn't nil or false. Remember I mentioned earlier that Ruby's nil is represented as 8
+and false as 0. Since 8 is a multiple of 8 (duh), and the bitwise & of zero and anything also gives 0, the first check doesn't cover for nil and false,
+this 2nd check does. So if (object & 7 || !(object & 8)) is 0 (false), !(object & 7 || !(object & 8)) is true which means the object is a buit-in type,
+so it's casted.
+
+2. Every other type can be determined by checking if it's any of the static ones (true =20, false=0, nil=8) or if an odd number check with obj & 1 == 1 for integers.
+
+Notes
+RVALUE is a union of all the ruby built-in object structs. I guess the largest struct is 40 bytes.
